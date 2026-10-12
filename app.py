@@ -7,17 +7,30 @@ import yt_dlp
 app = Flask(__name__)
 CORS(app)
 
-# Automatically write cookies from Render Environment Variable if it exists
-cookies_env = os.environ.get("COOKIES_CONTENT")
 COOKIE_FILE_PATH = "cookies.txt"
 
-if cookies_env:
-    with open(COOKIE_FILE_PATH, "w", encoding="utf-8") as f:
-        f.write(cookies_env)
+def setup_cookies():
+    cookies_env = os.environ.get("COOKIES_CONTENT")
+    if cookies_env:
+        # Clean up any literal carriage returns if pasted weirdly
+        cleaned_cookies = cookies_env.replace("\r\n", "\n")
+        with open(COOKIE_FILE_PATH, "w", encoding="utf-8") as f:
+            f.write(cleaned_cookies)
+        print("SUCCESS: cookies.txt written from environment variable.")
+    else:
+        print("WARNING: COOKIES_CONTENT environment variable is missing or empty!")
+
+# Initialize cookies on startup
+setup_cookies()
 
 @app.route('/', methods=['GET'])
 def health_check():
-    return jsonify({"status": "online", "message": "YT-DLP Cloud API is running!"}), 200
+    cookie_exists = os.path.exists(COOKIE_FILE_PATH)
+    return jsonify({
+        "status": "online", 
+        "message": "YT-DLP Cloud API is running!",
+        "cookies_loaded": cookie_exists
+    }), 200
 
 @app.route('/download-media', methods=['POST'])
 def download_media():
@@ -64,7 +77,10 @@ def download_media():
     }
 
     if os.path.exists(COOKIE_FILE_PATH):
-        ydl_opts['cookiefile'] = COOKIE_FILE_PATH
+        ydl_opts['cookiefile'] = COOKIES_FILE_PATH
+        print("Using cookies.txt for yt-dlp request.")
+    else:
+        print("WARNING: cookies.txt not found during request!")
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
