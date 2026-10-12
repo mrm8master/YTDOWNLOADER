@@ -1,8 +1,15 @@
 import os
 import glob
+import subprocess
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import yt_dlp
+
+# Force upgrade yt-dlp to latest version on container start to handle YouTube's frequent changes
+try:
+    subprocess.run(["pip", "install", "--no-cache-dir", "--upgrade", "yt-dlp"], check=False)
+except Exception:
+    pass
 
 app = Flask(__name__)
 CORS(app)
@@ -66,14 +73,15 @@ def download_media():
             'noplaylist': True,
         }
 
+    # Use android/ios client fallback alongside web to bypass strict bot challenges
     ydl_opts['extractor_args'] = {
         'youtube': {
-            'player_client': ['web_safari', 'web']
+            'player_client': ['android', 'web']
         }
     }
 
     if os.path.exists(COOKIE_FILE_PATH):
-        ydl_opts['cookiefile'] = COOKIE_FILE_PATH
+        ydl_opts['cookiefile'] = COOKIES_FILE_PATH
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
