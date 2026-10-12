@@ -27,11 +27,16 @@ def get_download_link():
     video_url = data.get('url')
     quality = data.get('quality', '720')
 
+    # Configure yt-dlp to bypass reload/bot blocks by forcing web_safari client & cookies
     ydl_opts = {
         'noplaylist': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['web_safari', 'web']
+            }
+        }
     }
 
-    # Use cookie file if it was successfully created from the environment variable
     if os.path.exists(COOKIE_FILE_PATH):
         ydl_opts['cookiefile'] = COOKIE_FILE_PATH
 
