@@ -12,7 +12,6 @@ COOKIE_FILE_PATH = "cookies.txt"
 def setup_cookies():
     cookies_env = os.environ.get("COOKIES_CONTENT")
     if cookies_env:
-        # Clean up any literal carriage returns if pasted weirdly
         cleaned_cookies = cookies_env.replace("\r\n", "\n")
         with open(COOKIE_FILE_PATH, "w", encoding="utf-8") as f:
             f.write(cleaned_cookies)
@@ -20,7 +19,6 @@ def setup_cookies():
     else:
         print("WARNING: COOKIES_CONTENT environment variable is missing or empty!")
 
-# Initialize cookies on startup
 setup_cookies()
 
 @app.route('/', methods=['GET'])
@@ -41,7 +39,6 @@ def download_media():
     video_url = data.get('url')
     quality = data.get('quality', '720')
 
-    # Clean up old files in container workspace
     for f in glob.glob("downloads/*"):
         try:
             os.remove(f)
@@ -69,7 +66,6 @@ def download_media():
             'noplaylist': True,
         }
 
-    # Bypass bot detection & reload prompts
     ydl_opts['extractor_args'] = {
         'youtube': {
             'player_client': ['web_safari', 'web']
@@ -77,10 +73,7 @@ def download_media():
     }
 
     if os.path.exists(COOKIE_FILE_PATH):
-        ydl_opts['cookiefile'] = COOKIES_FILE_PATH
-        print("Using cookies.txt for yt-dlp request.")
-    else:
-        print("WARNING: cookies.txt not found during request!")
+        ydl_opts['cookiefile'] = COOKIE_FILE_PATH
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
